@@ -1,0 +1,4 @@
+# Gradle Tools
+
+This repository contains Gradle and Gradle Wrapper. It is used as submodule to simplify the updates of the build toolchain in curricula.
+
