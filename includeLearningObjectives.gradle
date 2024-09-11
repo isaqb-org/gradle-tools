@@ -31,7 +31,7 @@ tasks.register('includeLearningObjectives') {
     }
 
     ext.collectLearningObjectives = { pattern ->
-        def docsFolder = new File(projectDir, '/docs')
+        def docsFolder = new File(workDirectory, '/docs')
         def learningObjectives = []
 
         docsFolder.traverse(type: FILES) { file ->
@@ -81,7 +81,7 @@ ext.compileLearningObjectives = { language, headline, learningObjectives ->
 }
 
 ext.writeLearningObjectives = { contentDE, contentEN ->
-    def docsFolder = new File(projectDir, '/docs')
+    def docsFolder = new File(workDirectory, '/docs')
     def outFile = new File(docsFolder, '/learning-objectives.adoc')
 
     println "Learning objectives file: " + outFile.getAbsolutePath()

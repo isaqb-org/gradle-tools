@@ -1,0 +1,146 @@
+import org.asciidoctor.gradle.jvm.AsciidoctorTask
+import org.asciidoctor.gradle.jvm.pdf.AsciidoctorPdfTask
+
+import java.text.SimpleDateFormat
+
+
+plugins {
+    id 'application'
+    id 'org.asciidoctor.jvm.convert' version '4.0.3'
+    id 'org.asciidoctor.jvm.pdf' version '4.0.3'
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    workDirectory = rootProject.projectDir
+    def releaseVersion = System.getenv("RELEASE_VERSION")
+    def localVersion = "LocalBuild"
+    def curriculumFileName = rootProject.curriculumFileName
+    project.version = releaseVersion == null ? localVersion : releaseVersion
+    versionDate = new SimpleDateFormat("yyyyMMdd").format(new Date())
+}
+
+//def curriculumFileName = "curriculum-template"
+//def languages = ["DE", "EN"]
+def buildPDF = rootProject.ext.languages.collect { 'pdf' + it }
+def buildHTML = rootProject.ext.languages.collect { 'html' + it }
+
+
+println workDirectory
+
+pdfThemes {
+    local 'iSAQB', {
+        themeDir = '../pdf-theme/themes'
+        themeName = 'iSAQB'
+    }
+}
+
+
+application {
+    applicationDefaultJvmArgs = [
+            """--add-opens""", """java.base/sun.nio.ch=ALL-UNNAMED""",
+            """--add-opens""", """java.base/java.io=ALL-UNNAMED""",
+    ]
+}
+
+
+languages.forEach { lang ->
+    tasks.register("pdf${lang}", AsciidoctorPdfTask) {
+
+        mustRunAfter includeLearningObjectives
+
+        jvm {
+            jvmArgs("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")
+        }
+
+        sourceDir = new File("${workDirectory}/docs/")
+        baseDir = new File("${workDirectory}/docs/")
+        sources {
+            include "${curriculumFileName}.adoc"
+        }
+
+        outputDir "${workDirectory}/build/"
+
+        theme "iSAQB"
+        fontsDirs '../pdf-theme/fonts'
+        def fileVersion = project.version.trim() + "-" + lang
+
+        attributes = [
+                'icons'             : 'font',
+                'version-label'     : '',
+                'revnumber'         : fileVersion,
+                'revdate'           : versionDate,
+                'document-version'  : fileVersion + "-" + versionDate,
+                'currentDate'       : versionDate,
+                'release-version'   : project.version,
+                'language'          : lang,
+                'curriculumFileName': curriculumFileName,
+                'data-uri'          : true,
+                'allow-uri-read'    : true,
+        ]
+
+        doLast {
+
+            File source = new File("${workDirectory}/build/${curriculumFileName}.pdf")
+            File target = new File("${workDirectory}/build/${curriculumFileName}-${lang.toLowerCase()}.pdf")
+            source.renameTo(target)
+        }
+    }
+
+    tasks.register("html${lang}", AsciidoctorTask) {
+
+        mustRunAfter includeLearningObjectives
+
+        jvm {
+            jvmArgs("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")
+        }
+
+        sourceDir = new File("${workDirectory}/docs/")
+        baseDir = new File("${workDirectory}/docs/")
+        sources {
+            include "index.adoc"
+            include "${curriculumFileName}.adoc"
+        }
+
+        outputDir "${workDirectory}/build/"
+
+        def fileVersion = project.version.trim() + "-" + lang
+
+        attributes = [
+                'icons'             : 'font',
+                'version-label'     : '',
+                'revnumber'         : fileVersion,
+                'revdate'           : versionDate,
+                'document-version'  : fileVersion + "-" + versionDate,
+                'currentDate'       : versionDate,
+                'release-version'   : project.version,
+                'language'          : lang,
+                'curriculumFileName': curriculumFileName,
+                'data-uri'          : true,
+                'allow-uri-read'    : true,
+                'stylesheet'        : '../html-theme/adoc-github.css',
+                'stylesheet-dir'    : '../html-theme'
+        ]
+
+        doLast {
+
+            File source = new File("${workDirectory}/build/${curriculumFileName}.html")
+            File target = new File("${workDirectory}/build/${curriculumFileName}-${lang.toLowerCase()}.html")
+            source.renameTo(target)
+        }
+    }
+}
+
+def buildDocs = tasks.register('buildDocs') {
+    description = 'Grouping task for generating all languages in several formats'
+    group = 'documentation'
+    dependsOn includeLearningObjectives, buildPDF, buildHTML
+}
+
+apply from: 'includeLearningObjectives.gradle'
+
+
+defaultTasks 'buildDocs'
