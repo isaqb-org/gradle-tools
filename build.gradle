@@ -32,9 +32,9 @@ def buildHTML = rootProject.ext.languages.collect { 'html' + it }
 println workDirectory
 
 pdfThemes {
-    local 'iSAQB', {
+    local 'isaqb', {
         themeDir = '../pdf-theme/themes'
-        themeName = 'iSAQB'
+        themeName = 'isaqb'
     }
 }
 
@@ -64,7 +64,7 @@ languages.forEach { lang ->
 
         outputDir "${workDirectory}/build/"
 
-        theme "iSAQB"
+        theme "isaqb"
         fontsDirs '../pdf-theme/fonts'
         def fileVersion = project.version.trim() + "-" + lang
 
