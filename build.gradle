@@ -128,7 +128,8 @@ languages.forEach { lang ->
     }
 }
 
-def buildDocs = tasks.register('buildDocs') {
+
+tasks.register('buildDocs') {
     description = 'Grouping task for generating all languages in several formats'
     group = 'documentation'
     dependsOn includeLearningObjectives, buildPDF, buildHTML
