@@ -23,8 +23,6 @@ ext {
     versionDate = new SimpleDateFormat("yyyyMMdd").format(new Date())
 }
 
-//def curriculumFileName = "curriculum-template"
-//def languages = ["DE", "EN"]
 def buildPDF = rootProject.ext.languages.collect { 'pdf' + it }
 def buildHTML = rootProject.ext.languages.collect { 'html' + it }
 
