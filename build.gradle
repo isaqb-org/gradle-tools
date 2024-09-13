@@ -135,6 +135,13 @@ tasks.register('buildDocs') {
     dependsOn includeLearningObjectives, buildPDF, buildHTML
 }
 
+
+clean {
+    delete "build"
+    delete "${workDirectory}/build"
+}
+
+
 apply from: 'includeLearningObjectives.gradle'
 
 
