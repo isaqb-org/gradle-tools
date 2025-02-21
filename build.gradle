@@ -21,8 +21,8 @@ ext {
     def localVersion = "LocalBuild"
     def curriculumFileName = rootProject.curriculumFileName
 
-    validity = ""
-
+    // We can only set a value for validity if it was set in the parent gradle file.
+    validity = null
     if (rootProject.hasProperty("validity")) {
         validity = rootProject.validity
     }
