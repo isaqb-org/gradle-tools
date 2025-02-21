@@ -32,16 +32,15 @@ ext {
     versionDate = new SimpleDateFormat("yyyyMMdd").format(new Date())
 }
 
-def formatValidity(validity, language) {
-
+static def formatValidity(validity, language) {
     if (validity) {
         try {
+            def parsedValidity = new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity)
+
             if (language == "DE") {
-                return " (Gültig ab " + new SimpleDateFormat("d. MMMM yyy", Locale.GERMANY).format(
-                        new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity)) + ")"
+                return " (Gültig ab " + new SimpleDateFormat("d. MMMM yyy", Locale.GERMANY).format(parsedValidity) + ")"
             } else {
-                return " (valid from " + new SimpleDateFormat("MMMM d, yyyy", Locale.US).format(
-                        new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity)) + ")"
+                return " (valid from " + new SimpleDateFormat("MMMM d, yyyy", Locale.US).format(parsedValidity) + ")"
             }
         } catch (final ParseException e) {
             return ""
