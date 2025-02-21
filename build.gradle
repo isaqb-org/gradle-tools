@@ -1,6 +1,7 @@
 import org.asciidoctor.gradle.jvm.AsciidoctorTask
 import org.asciidoctor.gradle.jvm.pdf.AsciidoctorPdfTask
 
+import java.text.ParseException
 import java.text.SimpleDateFormat
 
 
@@ -19,8 +20,28 @@ ext {
     def releaseVersion = System.getenv("RELEASE_VERSION")
     def localVersion = "LocalBuild"
     def curriculumFileName = rootProject.curriculumFileName
+    def validity = rootProject.validity
     project.version = releaseVersion == null ? localVersion : releaseVersion
     versionDate = new SimpleDateFormat("yyyyMMdd").format(new Date())
+}
+
+ext.formatValidity { validity, language ->
+
+    if (validity) {
+        try {
+            if (language == "DE") {
+                return "Gültig ab " + new SimpleDateFormat("d. MMMM yyy", Locale.GERMANY).format(
+                        new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity))
+            } else {
+                return "valid from " + new SimpleDateFormat("MMMM d, yyyy", Locale.US).format(
+                        new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity))
+            }
+        } catch (final ParseException e) {
+            return ""
+        }
+    }
+
+    return ""
 }
 
 def buildPDF = rootProject.ext.languages.collect { 'pdf' + it }
@@ -62,6 +83,10 @@ languages.forEach { lang ->
         fontsDirs '../pdf-theme/fonts'
         def fileVersion = project.version.trim() + "-" + lang
 
+
+        def validityFormatted = ext.formatValidity(ext.validity, lang)
+
+
         attributes = [
                 'icons'             : 'font',
                 'version-label'     : '',
@@ -74,6 +99,7 @@ languages.forEach { lang ->
                 'curriculumFileName': curriculumFileName,
                 'data-uri'          : true,
                 'allow-uri-read'    : true,
+                'validity'          : validityFormatted,
         ]
 
         doLast {
