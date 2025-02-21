@@ -20,21 +20,28 @@ ext {
     def releaseVersion = System.getenv("RELEASE_VERSION")
     def localVersion = "LocalBuild"
     def curriculumFileName = rootProject.curriculumFileName
-    def validity = rootProject.validity
+
+    validity = ""
+
+    if (rootProject.hasProperty("validity")) {
+        validity = rootProject.validity
+    }
+
+
     project.version = releaseVersion == null ? localVersion : releaseVersion
     versionDate = new SimpleDateFormat("yyyyMMdd").format(new Date())
 }
 
-ext.formatValidity { validity, language ->
+def formatValidity(validity, language) {
 
     if (validity) {
         try {
             if (language == "DE") {
-                return "Gültig ab " + new SimpleDateFormat("d. MMMM yyy", Locale.GERMANY).format(
-                        new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity))
+                return " (Gültig ab " + new SimpleDateFormat("d. MMMM yyy", Locale.GERMANY).format(
+                        new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity)) + ")"
             } else {
-                return "valid from " + new SimpleDateFormat("MMMM d, yyyy", Locale.US).format(
-                        new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity))
+                return " (valid from " + new SimpleDateFormat("MMMM d, yyyy", Locale.US).format(
+                        new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity)) + ")"
             }
         } catch (final ParseException e) {
             return ""
@@ -83,27 +90,21 @@ languages.forEach { lang ->
         fontsDirs '../pdf-theme/fonts'
         def fileVersion = project.version.trim() + "-" + lang
 
-
-        def validityFormatted = ext.formatValidity(ext.validity, lang)
-
-
         attributes = [
                 'icons'             : 'font',
                 'version-label'     : '',
                 'revnumber'         : fileVersion,
                 'revdate'           : versionDate,
-                'document-version'  : fileVersion + "-" + versionDate,
+                'document-version'  : fileVersion + "-" + versionDate + formatValidity(validity, lang),
                 'currentDate'       : versionDate,
                 'release-version'   : project.version,
                 'language'          : lang,
                 'curriculumFileName': curriculumFileName,
                 'data-uri'          : true,
                 'allow-uri-read'    : true,
-                'validity'          : validityFormatted,
         ]
 
         doLast {
-
             File source = new File("${workDirectory}/build/${curriculumFileName}.pdf")
             File target = new File("${workDirectory}/build/${curriculumFileName}-${lang.toLowerCase()}.pdf")
             source.renameTo(target)
