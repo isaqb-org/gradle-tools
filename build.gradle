@@ -1,6 +1,7 @@
 import org.asciidoctor.gradle.jvm.AsciidoctorTask
 import org.asciidoctor.gradle.jvm.pdf.AsciidoctorPdfTask
 
+import java.text.ParseException
 import java.text.SimpleDateFormat
 
 
@@ -19,8 +20,34 @@ ext {
     def releaseVersion = System.getenv("RELEASE_VERSION")
     def localVersion = "LocalBuild"
     def curriculumFileName = rootProject.curriculumFileName
+
+    // We can only set a value for validity if it was set in the parent gradle file.
+    validity = null
+    if (rootProject.hasProperty("validity")) {
+        validity = rootProject.validity
+    }
+
+
     project.version = releaseVersion == null ? localVersion : releaseVersion
     versionDate = new SimpleDateFormat("yyyyMMdd").format(new Date())
+}
+
+static def formatValidity(validity, language) {
+    if (validity) {
+        try {
+            def parsedValidity = new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity)
+
+            if (language == "DE") {
+                return " (Gültig ab " + new SimpleDateFormat("d. MMMM yyy", Locale.GERMANY).format(parsedValidity) + ")"
+            } else {
+                return " (valid from " + new SimpleDateFormat("MMMM d, yyyy", Locale.US).format(parsedValidity) + ")"
+            }
+        } catch (final ParseException e) {
+            return ""
+        }
+    }
+
+    return ""
 }
 
 def buildPDF = rootProject.ext.languages.collect { 'pdf' + it }
@@ -67,7 +94,7 @@ languages.forEach { lang ->
                 'version-label'     : '',
                 'revnumber'         : fileVersion,
                 'revdate'           : versionDate,
-                'document-version'  : fileVersion + "-" + versionDate,
+                'document-version'  : fileVersion + "-" + versionDate + formatValidity(validity, lang),
                 'currentDate'       : versionDate,
                 'release-version'   : project.version,
                 'language'          : lang,
@@ -77,7 +104,6 @@ languages.forEach { lang ->
         ]
 
         doLast {
-
             File source = new File("${workDirectory}/build/${curriculumFileName}.pdf")
             File target = new File("${workDirectory}/build/${curriculumFileName}-${lang.toLowerCase()}.pdf")
             source.renameTo(target)
