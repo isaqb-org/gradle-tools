@@ -11,6 +11,15 @@ plugins {
     id 'org.asciidoctor.jvm.pdf' version '4.0.3'
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/org/isaqb']
+        }
+    }
+}
+
+
 repositories {
     mavenCentral()
 }
@@ -112,8 +121,11 @@ languages.forEach { lang ->
 
     tasks.register("html${lang}", AsciidoctorTask) {
 
-        mustRunAfter includeLearningObjectives
-
+        asciidoctorj {
+            javaExtensionRegistry {
+                treeprocessor 'org.isaqb.SpecialTocTreeprocessor'
+            }
+        }
         jvm {
             jvmArgs("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")
         }
