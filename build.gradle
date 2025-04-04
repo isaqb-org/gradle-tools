@@ -20,43 +20,6 @@ repositories {
     mavenCentral()
 }
 
-ext {
-    workDirectory = rootProject.projectDir
-    def releaseVersion = System.getenv("RELEASE_VERSION")
-    def localVersion = "LocalBuild"
-    def curriculumFileName = rootProject.curriculumFileName
-
-    // We can only set a value for validity if it was set in the parent gradle file.
-    validity = null
-    if (rootProject.hasProperty("validity")) {
-        validity = rootProject.validity
-    }
-
-    project.version = releaseVersion == null ? localVersion : releaseVersion
-    versionDate = new SimpleDateFormat("yyyyMMdd").format(new Date())
-}
-
-static def formatValidity(validity, language) {
-    if (validity) {
-        try {
-            def parsedValidity = new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse((String) validity)
-
-            if (language == "DE") {
-                return " (Gültig ab " + new SimpleDateFormat("d. MMMM yyy", Locale.GERMANY).format(parsedValidity) + ")"
-            } else {
-                return " (valid from " + new SimpleDateFormat("MMMM d, yyyy", Locale.US).format(parsedValidity) + ")"
-            }
-        } catch (final ParseException e) {
-            return ""
-        }
-    }
-
-    return ""
-}
-
-def buildPDF = rootProject.ext.languages.collect { 'pdf' + it }
-def buildHTML = rootProject.ext.languages.collect { 'html' + it }
-
 pdfThemes {
     local 'isaqb', {
         themeDir = '../pdf-theme/themes'
@@ -64,103 +27,116 @@ pdfThemes {
     }
 }
 
+ext {
+
+    workDirectory = rootProject.projectDir
+    project.version = System.getenv("RELEASE_VERSION") ?: "LocalBuild"
+    versionDate = new SimpleDateFormat("yyyyMMdd").format(new Date())
+    curriculumFileName = rootProject.curriculumFileName
+    validity = rootProject.findProperty("validity")
+    languages = rootProject.findProperty("languages") ?: ["DE", "EN"]
+    suffixTags = rootProject.findProperty("suffixTags") ? rootProject.suffixTags : [""]
+}
+
+asciidoctorj {
+    // Use a Groovy script extension with proper file reference
+    docExtensions new File("${projectDir}/SpecialTocTreeprocessor.groovy")
+}
+
+static def formatValidity(validity, language) {
+    if (validity) {
+        try {
+            def parsedValidity = new SimpleDateFormat("yyyy/MM/dd", Locale.US).parse(validity as String)
+            return language == "DE" ? " (Gültig ab " + new SimpleDateFormat("d. MMMM yyyy", Locale.GERMANY).format(parsedValidity) + ")"
+                    : " (valid from " + new SimpleDateFormat("MMMM d, yyyy", Locale.US).format(parsedValidity) + ")"
+        } catch (ParseException e) {
+            return ""
+        }
+    }
+
+    return ""
+}
+
+// Automatische Task-Erstellung für PDF & HTML
+def registerAsciiDocTask(String format, Class<?> taskType) {
+    languages.each { lang ->
+        suffixTags.each { suffix ->
+            tasks.register("${format}${lang}${suffix}", taskType) {
+
+                println "Here goes ${format}${lang}${suffix}"
+
+                jvm {
+                    jvmArgs("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")
+                }
+
+                sourceDir = file("${workDirectory}/docs/")
+                baseDir = file("${workDirectory}/docs/")
+                sources {
+                    include format == "pdf" ? "${curriculumFileName}.adoc" : ["index.adoc", "${curriculumFileName}.adoc"]
+                }
+
+                outputDir = file("${workDirectory}/build/")
+
+                def fileVersion = "${project.version.trim()}-${lang}"
+
+                attributes = ['icons'                : 'font',
+                              'version-label'        : '',
+                              'revnumber'            : fileVersion,
+                              'revdate'              : versionDate,
+                              'document-version'     : "${fileVersion}-${versionDate}${formatValidity(validity, lang)}",
+                              'currentDate'          : versionDate,
+                              'release-version'      : project.version,
+                              'language'             : lang,
+                              'curriculumFileName'   : curriculumFileName,
+                              'data-uri'             : true,
+                              'allow-uri-read'       : true,
+                              'include-configuration': "tags=**;${lang};!*",
+                              'suffix'               : suffix.toString(),
+                ]
+
+                if (format == "pdf") {
+                    theme "isaqb"
+                    fontsDirs '../pdf-theme/fonts'
+                } else {
+                    attributes['stylesheet'] = '../html-theme/adoc-github.css'
+                    attributes['stylesheet-dir'] = '../html-theme'
+                }
+
+                doLast {
+                    // Falls suffix leer ist, nicht in den Dateinamen aufnehmen
+                    String suffixPart = suffix ? "-${suffix.toLowerCase()}" : ""
+
+                    File source = file("${workDirectory}/build/${curriculumFileName}.${format}")
+                    File target = file("${workDirectory}/build/${curriculumFileName}${suffixPart}-${lang.toLowerCase()}.${format}")
+                    source.renameTo(target)
+                }
+            }
+        }
+    }
+}
+
+// PDF- und HTML-Tasks registrieren
+registerAsciiDocTask("pdf", AsciidoctorPdfTask)
+registerAsciiDocTask("html", AsciidoctorTask)
+
+
 application {
     applicationDefaultJvmArgs = ["""--add-opens""", """java.base/sun.nio.ch=ALL-UNNAMED""",
                                  """--add-opens""", """java.base/java.io=ALL-UNNAMED""",]
 }
 
-asciidoctorj {
-    // Use the simple Groovy script extension with proper file reference
-    docExtensions new File("${projectDir}/SpecialTocTreeprocessor.groovy")
-}
 
-languages.forEach { lang ->
-    tasks.register("pdf${lang}", AsciidoctorPdfTask) {
-        jvm {
-            jvmArgs("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")
-        }
-
-        sourceDir = new File("${workDirectory}/docs/")
-        baseDir = new File("${workDirectory}/docs/")
-        sources {
-            include "${curriculumFileName}.adoc"
-        }
-
-        outputDir "${workDirectory}/build/"
-
-        theme "isaqb"
-        fontsDirs '../pdf-theme/fonts'
-        def fileVersion = project.version.trim() + "-" + lang
-
-        attributes = ['icons'             : 'font',
-                      'version-label'     : '',
-                      'revnumber'         : fileVersion,
-                      'revdate'           : versionDate,
-                      'document-version'  : fileVersion + "-" + versionDate + formatValidity(validity, lang),
-                      'currentDate'       : versionDate,
-                      'release-version'   : project.version,
-                      'language'          : lang,
-                      'curriculumFileName': curriculumFileName,
-                      'data-uri'          : true,
-                      'allow-uri-read'    : true,]
-
-        doLast {
-            File source = new File("${workDirectory}/build/${curriculumFileName}.pdf")
-            File target = new File("${workDirectory}/build/${curriculumFileName}-${lang.toLowerCase()}.pdf")
-            source.renameTo(target)
-        }
-    }
-
-    tasks.register("html${lang}", AsciidoctorTask) {
-        jvm {
-            jvmArgs("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")
-        }
-
-
-        sourceDir = new File("${workDirectory}/docs/")
-        baseDir = new File("${workDirectory}/docs/")
-        sources {
-            include "index.adoc"
-            include "${curriculumFileName}.adoc"
-        }
-
-        outputDir "${workDirectory}/build/"
-
-        def fileVersion = project.version.trim() + "-" + lang
-
-        attributes = ['icons'             : 'font',
-                      'version-label'     : '',
-                      'revnumber'         : fileVersion,
-                      'revdate'           : versionDate,
-                      'document-version'  : fileVersion + "-" + versionDate,
-                      'currentDate'       : versionDate,
-                      'release-version'   : project.version,
-                      'language'          : lang,
-                      'curriculumFileName': curriculumFileName,
-                      'data-uri'          : true,
-                      'allow-uri-read'    : true,
-                      'stylesheet'        : '../html-theme/adoc-github.css',
-                      'stylesheet-dir'    : '../html-theme']
-
-        doLast {
-
-            File source = new File("${workDirectory}/build/${curriculumFileName}.html")
-            File target = new File("${workDirectory}/build/${curriculumFileName}-${lang.toLowerCase()}.html")
-            source.renameTo(target)
-        }
-    }
-}
-
-
+// Gruppierungs-Task automatisch aus bestehenden Tasks ableiten
 tasks.register('buildDocs') {
     description = 'Grouping task for generating all languages in several formats'
     group = 'documentation'
-    dependsOn buildPDF, buildHTML
+    dependsOn tasks.matching { it.name.startsWith("pdf") || it.name.startsWith("html") }
 }
 
+// Cleanup Task verbessert
 clean {
-    delete "build"
-    delete "${workDirectory}/build"
+    delete fileTree(dir: "${workDirectory}/build", includes: ['**/*'])
 }
 
+// Standard-Task setzen
 defaultTasks 'buildDocs'
