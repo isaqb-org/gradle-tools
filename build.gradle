@@ -11,12 +11,8 @@ plugins {
     id 'org.asciidoctor.jvm.pdf' version '4.0.3'
 }
 
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src/main/org/isaqb']
-        }
-    }
+dependencies {
+    implementation 'org.asciidoctor:asciidoctorj:3.0.0'
 }
 
 
@@ -35,7 +31,6 @@ ext {
     if (rootProject.hasProperty("validity")) {
         validity = rootProject.validity
     }
-
 
     project.version = releaseVersion == null ? localVersion : releaseVersion
     versionDate = new SimpleDateFormat("yyyyMMdd").format(new Date())
@@ -70,18 +65,17 @@ pdfThemes {
 }
 
 application {
-    applicationDefaultJvmArgs = [
-            """--add-opens""", """java.base/sun.nio.ch=ALL-UNNAMED""",
-            """--add-opens""", """java.base/java.io=ALL-UNNAMED""",
-    ]
+    applicationDefaultJvmArgs = ["""--add-opens""", """java.base/sun.nio.ch=ALL-UNNAMED""",
+                                 """--add-opens""", """java.base/java.io=ALL-UNNAMED""",]
 }
 
+asciidoctorj {
+    // Use the simple Groovy script extension with proper file reference
+    docExtensions new File("${projectDir}/SpecialTocTreeprocessor.groovy")
+}
 
 languages.forEach { lang ->
     tasks.register("pdf${lang}", AsciidoctorPdfTask) {
-
-        mustRunAfter includeLearningObjectives
-
         jvm {
             jvmArgs("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")
         }
@@ -98,19 +92,17 @@ languages.forEach { lang ->
         fontsDirs '../pdf-theme/fonts'
         def fileVersion = project.version.trim() + "-" + lang
 
-        attributes = [
-                'icons'             : 'font',
-                'version-label'     : '',
-                'revnumber'         : fileVersion,
-                'revdate'           : versionDate,
-                'document-version'  : fileVersion + "-" + versionDate + formatValidity(validity, lang),
-                'currentDate'       : versionDate,
-                'release-version'   : project.version,
-                'language'          : lang,
-                'curriculumFileName': curriculumFileName,
-                'data-uri'          : true,
-                'allow-uri-read'    : true,
-        ]
+        attributes = ['icons'             : 'font',
+                      'version-label'     : '',
+                      'revnumber'         : fileVersion,
+                      'revdate'           : versionDate,
+                      'document-version'  : fileVersion + "-" + versionDate + formatValidity(validity, lang),
+                      'currentDate'       : versionDate,
+                      'release-version'   : project.version,
+                      'language'          : lang,
+                      'curriculumFileName': curriculumFileName,
+                      'data-uri'          : true,
+                      'allow-uri-read'    : true,]
 
         doLast {
             File source = new File("${workDirectory}/build/${curriculumFileName}.pdf")
@@ -120,15 +112,10 @@ languages.forEach { lang ->
     }
 
     tasks.register("html${lang}", AsciidoctorTask) {
-
-        asciidoctorj {
-            javaExtensionRegistry {
-                treeprocessor 'org.isaqb.SpecialTocTreeprocessor'
-            }
-        }
         jvm {
             jvmArgs("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")
         }
+
 
         sourceDir = new File("${workDirectory}/docs/")
         baseDir = new File("${workDirectory}/docs/")
@@ -141,21 +128,19 @@ languages.forEach { lang ->
 
         def fileVersion = project.version.trim() + "-" + lang
 
-        attributes = [
-                'icons'             : 'font',
-                'version-label'     : '',
-                'revnumber'         : fileVersion,
-                'revdate'           : versionDate,
-                'document-version'  : fileVersion + "-" + versionDate,
-                'currentDate'       : versionDate,
-                'release-version'   : project.version,
-                'language'          : lang,
-                'curriculumFileName': curriculumFileName,
-                'data-uri'          : true,
-                'allow-uri-read'    : true,
-                'stylesheet'        : '../html-theme/adoc-github.css',
-                'stylesheet-dir'    : '../html-theme'
-        ]
+        attributes = ['icons'             : 'font',
+                      'version-label'     : '',
+                      'revnumber'         : fileVersion,
+                      'revdate'           : versionDate,
+                      'document-version'  : fileVersion + "-" + versionDate,
+                      'currentDate'       : versionDate,
+                      'release-version'   : project.version,
+                      'language'          : lang,
+                      'curriculumFileName': curriculumFileName,
+                      'data-uri'          : true,
+                      'allow-uri-read'    : true,
+                      'stylesheet'        : '../html-theme/adoc-github.css',
+                      'stylesheet-dir'    : '../html-theme']
 
         doLast {
 
@@ -170,17 +155,12 @@ languages.forEach { lang ->
 tasks.register('buildDocs') {
     description = 'Grouping task for generating all languages in several formats'
     group = 'documentation'
-    dependsOn includeLearningObjectives, buildPDF, buildHTML
+    dependsOn buildPDF, buildHTML
 }
-
 
 clean {
     delete "build"
     delete "${workDirectory}/build"
 }
-
-
-apply from: 'includeLearningObjectives.gradle'
-
 
 defaultTasks 'buildDocs'
