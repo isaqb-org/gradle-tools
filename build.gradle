@@ -12,7 +12,7 @@ plugins {
 }
 
 dependencies {
-    implementation 'org.asciidoctor:asciidoctorj:3.0.0'
+    implementation 'org.asciidoctor:asciidoctorj:3.5.1'
 }
 
 

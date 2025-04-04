@@ -5,12 +5,9 @@
 treeprocessor {
     document ->
 
-    println 'SpecialTocTreeprocessor (Groovy) invoked!'
-
     // Get document backend and language
     def backend = document.getAttribute("backend")
     def language = document.getAttribute("language")
-    println "Document backend: ${backend}, language: ${language}"
 
     // Determine which learning goal prefix to look for based on language
     def lgPrefix = (language == "DE") ? "LZ" : "LG"
@@ -91,41 +88,29 @@ treeprocessor {
         blocks.add(insertIndex, block)
         println "Inserted HTML learning goals TOC at index ${insertIndex}"
     } else {
-        // For PDF, create and use a different approach
+        // For PDF, create a proper structure with discrete section and list
 
-        // Create a section with the title
-        def sectionBlock = createBlock(document, "section")
-        sectionBlock.title = sectionTitle
-//        sectionBlock.style = "discrete" // Don't include in main TOC
-        sectionBlock.level = 1 // Top level section
+        // Create the section with "discrete" style as a map of attributes
+//        def attributes = [style: "discrete"]
+        def sectionBlock = createSection(document, 1, false, [:])
+        sectionBlock.setTitle(sectionTitle)
 
-        // Create an unordered list under that section
-        def listBlock = createBlock(document, "ulist")
+        // Create a list for the learning goals
+        def listBlock = createList(sectionBlock, "ulist")
+        sectionBlock.getBlocks().add(listBlock)
 
-        // Add each learning goal to the list
+        // Add each learning goal as a list item with proper xref
         learningGoalSections.each { section ->
             def title = section.getTitle()
             def id = section.getId()
 
             // Create a list item
-            def listItem = createBlock(document, "list_item")
-            listitem.source = "<<${id},${title}>>"
-
-//            // For the list item content, we'll use a paragraph with a raw link
-//            def paragraph = createBlock(document, "paragraph")
-//            paragraph.source = "<<${id},${title}>>"
-//
-//            // Add paragraph to list item
-//            listItem.blocks.add(paragraph)
-
-            // Add list item to list
-            listBlock.getBlocks.add(listItem)
+            def listItem = createListItem(listBlock, "xref:${id}[${title}]")
+            listBlock.getBlocks().add(listItem)
         }
 
-        // Add the list to the section
-        sectionBlock.getBlocks.add(listBlock)
 
-        // Add the section to the document
+        // Add section to document
         blocks.add(insertIndex, sectionBlock)
         println "Inserted PDF learning goals TOC at index ${insertIndex}"
     }
@@ -142,6 +127,7 @@ def findLearningGoals(block, learningGoals, prefix) {
     if (block.getNodeName() == "section") {
         def id = block.getId()
         if (id && id.startsWith(prefix)) {
+            println "Found learning goal: ${id} with level ${block.getLevel()}"
             learningGoals << block
         }
     }
