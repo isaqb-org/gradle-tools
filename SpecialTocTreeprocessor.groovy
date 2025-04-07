@@ -17,11 +17,8 @@ treeprocessor { document ->
     document.getBlocks().each { block -> findLearningGoals(block, learningGoalSections) }
 
     if (learningGoalSections.isEmpty()) {
-        println 'No learning goal sections found.'
         return document
     }
-
-    println "Found ${learningGoalSections.size()} learning goal sections"
 
     // Sort the learning goals by ID for consistency
     learningGoalSections.sort { a, b -> a.getId() <=> b.getId() }
@@ -35,7 +32,6 @@ treeprocessor { document ->
         def block = blocks[i]
         if (block.getNodeName() == "preamble") {
             insertIndex = i + 1
-            println "Found preamble (which contains TOC), will insert after at index ${insertIndex}"
             break
         }
     }
@@ -46,15 +42,9 @@ treeprocessor { document ->
             def block = blocks[i]
             if (block.getNodeName() == "section") {
                 insertIndex = i
-                println "No preamble found, inserting before first section at index ${insertIndex}"
                 break
             }
         }
-    }
-
-    // If still no insertion point, use the beginning
-    if (insertIndex == 0) {
-        println "No suitable insertion point found, inserting at beginning"
     }
 
     def sectionBlock = createSection(document, 1, false, [:])
@@ -76,7 +66,6 @@ treeprocessor { document ->
 
     // Add section to document
     blocks.add(insertIndex, sectionBlock)
-    println "Inserted learning goals TOC at index ${insertIndex}"
 
     return document
 }
