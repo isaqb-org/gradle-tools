@@ -63,8 +63,6 @@ def registerAsciiDocTask(String format, Class<?> taskType) {
         suffixTags.each { suffix ->
             tasks.register("${format}${lang}${suffix}", taskType) {
 
-                println "Here goes ${format}${lang}${suffix}"
-
                 jvm {
                     jvmArgs("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")
                 }
