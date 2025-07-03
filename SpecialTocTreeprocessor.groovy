@@ -79,7 +79,6 @@ def findLearningGoals(block, learningGoals) {
     if (block.getNodeName() == "section") {
         def id = block.getId()
         if (id && (id.startsWith("LG") || id.startsWith("LZ"))) {
-            println "Found learning goal: ${id} with level ${block.getLevel()}"
             learningGoals << block
         }
     }
