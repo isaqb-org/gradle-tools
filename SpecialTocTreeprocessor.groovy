@@ -4,32 +4,6 @@
 // Use a treeprocessor to insert our learning goals TOC
 treeprocessor { document ->
 
-    // utility method to find all sections that are learning goals
-    def findLearningGoals = { block ->
-        def learningGoals = []
-
-        def collectGoals
-        collectGoals = { currentBlock ->
-            if (!currentBlock) {
-                return
-            }
-
-            if (currentBlock.getNodeName() == "section") {
-                def id = currentBlock.getId()
-                if (id?.startsWith("LG") || id?.startsWith("LZ")) {
-                    learningGoals << currentBlock
-                }
-            }
-
-            currentBlock.getBlocks()?.each { childBlock ->
-                collectGoals(childBlock)
-            }
-        }
-
-        collectGoals(block)
-        return learningGoals
-    }
-
     // Get document language
     def language = document.getAttribute("language")
 
@@ -40,7 +14,7 @@ treeprocessor { document ->
     def learningGoalSections = []
 
     // Process document blocks recursively to find learning goal sections
-    document.getBlocks().each { block -> findLearningGoals(block) }
+    document.getBlocks().each { block -> findLearningGoals(block, learningGoalSections) }
 
     if (learningGoalSections.isEmpty()) {
         return document
@@ -94,4 +68,25 @@ treeprocessor { document ->
     blocks.add(insertIndex, sectionBlock)
 
     return document
+}
+
+// Helper method to recursively find learning goal sections
+def findLearningGoals(block, learningGoals) {
+    // Only process if block is not null
+    if (!block) return
+
+    // Check if this is a section with a learning goal ID
+    if (block.getNodeName() == "section") {
+        def id = block.getId()
+        if (id && (id.startsWith("LG") || id.startsWith("LZ"))) {
+            println "Found learning goal: ${id} with level ${block.getLevel()}"
+            learningGoals << block
+        }
+    }
+
+    // Recursively process child blocks
+    if (block.getBlocks()) {
+        block.getBlocks().each { childBlock -> findLearningGoals(childBlock, learningGoals)
+        }
+    }
 }
