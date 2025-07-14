@@ -14,7 +14,9 @@ treeprocessor { document ->
     def learningGoalSections = []
 
     // Process document blocks recursively to find learning goal sections
-    document.getBlocks().each { block -> findLearningGoals(block, learningGoalSections) }
+    document.getBlocks().each { block -> 
+        learningGoalSections.addAll(findLearningGoals(block))
+    }
 
     if (learningGoalSections.isEmpty()) {
         return document
@@ -71,9 +73,11 @@ treeprocessor { document ->
 }
 
 // Helper method to recursively find learning goal sections
-def findLearningGoals(block, learningGoals) {
+def findLearningGoals(block) {
     // Only process if block is not null
-    if (!block) return
+    if (!block) return []
+
+    def learningGoals = []
 
     // Check if this is a section with a learning goal ID
     if (block.getNodeName() == "section") {
@@ -85,7 +89,10 @@ def findLearningGoals(block, learningGoals) {
 
     // Recursively process child blocks
     if (block.getBlocks()) {
-        block.getBlocks().each { childBlock -> findLearningGoals(childBlock, learningGoals)
+        block.getBlocks().each { childBlock -> 
+            learningGoals.addAll(findLearningGoals(childBlock))
         }
     }
+
+    return learningGoals
 }
