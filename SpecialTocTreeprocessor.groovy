@@ -61,8 +61,11 @@ treeprocessor { document ->
         def title = section.getTitle()
         def id = section.getId()
 
+        // Convert HTML superscript tags to AsciiDoc format for PDF compatibility
+        def cleanTitle = title.replaceAll(/<sup>(.*?)<\/sup>/, '^$1^')
+
         // Create a list item
-        def listItem = createListItem(listBlock, "xref:${id}[${title}]")
+        def listItem = createListItem(listBlock, "xref:${id}[${cleanTitle}]")
         listBlock.getBlocks().add(listItem)
     }
 
