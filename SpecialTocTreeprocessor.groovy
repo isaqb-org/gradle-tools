@@ -14,7 +14,7 @@ treeprocessor { document ->
     def learningGoalSections = []
 
     // Process document blocks recursively to find learning goal sections
-    document.getBlocks().each { block -> 
+    document.getBlocks().each { block ->
         learningGoalSections.addAll(findLearningGoals(block))
     }
 
@@ -64,6 +64,9 @@ treeprocessor { document ->
         // Convert HTML superscript tags to AsciiDoc format for PDF compatibility
         def cleanTitle = title.replaceAll(/<sup>(.*?)<\/sup>/, '^$1^')
 
+        // remove square brackets which might kill the xref of links
+        cleanTitle = escapeForXref(cleanTitle);
+
         // Create a list item
         def listItem = createListItem(listBlock, "xref:${id}[${cleanTitle}]")
         listBlock.getBlocks().add(listItem)
@@ -73,6 +76,18 @@ treeprocessor { document ->
     blocks.add(insertIndex, sectionBlock)
 
     return document
+}
+
+// Escape HTML-sensitive characters for safe usage in xref link texts
+static def escapeForXref(String input) {
+    return input
+            .replace('&', '&amp;')     // muss zuerst ersetzt werden
+            .replace('[', '&#91;')
+            .replace(']', '&#93;')
+            .replace('<', '&lt;')
+            .replace('>', '&gt;')
+            .replace('"', '&quot;')
+            .replace("'", '&#39;')
 }
 
 // Helper method to recursively find learning goal sections
@@ -92,7 +107,7 @@ def findLearningGoals(block) {
 
     // Recursively process child blocks
     if (block.getBlocks()) {
-        block.getBlocks().each { childBlock -> 
+        block.getBlocks().each { childBlock ->
             learningGoals.addAll(findLearningGoals(childBlock))
         }
     }
