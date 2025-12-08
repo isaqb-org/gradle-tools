@@ -100,13 +100,13 @@ def registerAsciiDocTask(String format, Class<?> taskType) {
                     attributes['stylesheet-dir'] = '../html-theme'
                 }
 
-                doLast {
-                    // Falls suffix leer ist, nicht in den Dateinamen aufnehmen
-                    String suffixPart = suffix ? "-${suffix.toLowerCase()}" : ""
+                // Capture file paths at configuration time to avoid project access at execution time
+                def suffixPart = suffix ? "-${suffix.toLowerCase()}" : ""
+                def sourceFile = file("${workDirectory}/build/${curriculumFileName}.${format}")
+                def targetFile = file("${workDirectory}/build/${curriculumFileName}${suffixPart}-${lang.toLowerCase()}.${format}")
 
-                    File source = file("${workDirectory}/build/${curriculumFileName}.${format}")
-                    File target = file("${workDirectory}/build/${curriculumFileName}${suffixPart}-${lang.toLowerCase()}.${format}")
-                    source.renameTo(target)
+                doLast {
+                    sourceFile.renameTo(targetFile)
                 }
             }
         }
