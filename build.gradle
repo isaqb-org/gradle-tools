@@ -7,8 +7,8 @@ import java.text.SimpleDateFormat
 
 plugins {
     id 'application'
-    id 'org.asciidoctor.jvm.convert' version '4.0.3'
-    id 'org.asciidoctor.jvm.pdf' version '4.0.3'
+    id 'org.asciidoctor.jvm.convert' version '4.0.5'
+    id 'org.asciidoctor.jvm.pdf' version '4.0.5'
 }
 
 dependencies {
