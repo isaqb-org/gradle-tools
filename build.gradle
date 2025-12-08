@@ -11,11 +11,6 @@ plugins {
     id 'org.asciidoctor.jvm.pdf' version '4.0.5'
 }
 
-dependencies {
-    implementation 'org.asciidoctor:asciidoctorj:3.5.1'
-}
-
-
 repositories {
     mavenCentral()
 }
@@ -39,7 +34,7 @@ ext {
 }
 
 asciidoctorj {
-    // Use a Groovy script extension with proper file reference
+    version = '3.0.1'
     docExtensions new File("${projectDir}/SpecialTocTreeprocessor.groovy")
 }
 
