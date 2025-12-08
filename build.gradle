@@ -90,6 +90,7 @@ def registerAsciiDocTask(String format, Class<?> taskType) {
                 if (format == "pdf") {
                     theme = "isaqb"
                     fontsDirs = ['../pdf-theme/fonts']
+                    attributes['compress'] = true
                 } else {
                     attributes['stylesheet'] = '../html-theme/adoc-github.css'
                     attributes['stylesheet-dir'] = '../html-theme'
