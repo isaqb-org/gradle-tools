@@ -61,10 +61,9 @@ treeprocessor { document ->
         def title = section.getTitle()
         def id = section.getId()
 
-        // Convert HTML superscript tags to AsciiDoc format for PDF compatibility
         def cleanTitle = title.replaceAll(/<sup>(.*?)<\/sup>/, '^$1^')
-
-        // remove square brackets which might kill the xref of links
+        cleanTitle = cleanTitle.replaceAll(/<sub>(.*?)<\/sub>/, '~$1~')
+        cleanTitle = unescapeHtmlEntities(cleanTitle)
         cleanTitle = escapeForXref(cleanTitle);
 
         // Create a list item
@@ -78,16 +77,19 @@ treeprocessor { document ->
     return document
 }
 
-// Escape HTML-sensitive characters for safe usage in xref link texts
+static def unescapeHtmlEntities(String input) {
+    return input
+            .replace('&amp;', '&')
+            .replace('&lt;', '<')
+            .replace('&gt;', '>')
+            .replace('&quot;', '"')
+            .replace('&#39;', "'")
+}
+
 static def escapeForXref(String input) {
     return input
-            .replace('&', '&amp;')     // muss zuerst ersetzt werden
             .replace('[', '&#91;')
             .replace(']', '&#93;')
-            .replace('<', '&lt;')
-            .replace('>', '&gt;')
-            .replace('"', '&quot;')
-            .replace("'", '&#39;')
 }
 
 // Helper method to recursively find learning goal sections
