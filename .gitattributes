@@ -1,0 +1,15 @@
+# Line-ending policy.
+#
+# The Gradle wrapper and shell scripts run in Linux containers (see docker/) and
+# on macOS, so they must stay LF even when checked out on Windows. A CRLF in
+# gradlew breaks its `#!/bin/sh` shebang and surfaces in the container as:
+#   exec ./gradle-tools/gradlew: no such file or directory
+gradlew      text eol=lf
+*.sh         text eol=lf
+
+# Windows batch files must stay CRLF.
+gradlew.bat  text eol=crlf
+*.bat        text eol=crlf
+
+# The wrapper jar is binary; never touch its bytes.
+*.jar        binary
