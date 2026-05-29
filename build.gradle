@@ -59,7 +59,15 @@ def registerAsciiDocTask(String format, Class<?> taskType) {
             tasks.register("${format}${lang}${suffix}", taskType) {
 
                 jvm {
-                    jvmArgs("--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED", "--add-opens", "java.base/java.io=ALL-UNNAMED")
+                    def extraJvmArgs = ["--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
+                                        "--add-opens", "java.base/java.io=ALL-UNNAMED",
+                                        "--enable-native-access=ALL-UNNAMED"]
+                    // Only valid on JDK 23+ (JEP 471); the warning it silences also only
+                    // appears there. Guard it so JDK 21 builds don't fail on an unknown flag.
+                    if (JavaVersion.current().majorVersion.toInteger() >= 23) {
+                        extraJvmArgs << "--sun-misc-unsafe-memory-access=allow"
+                    }
+                    jvmArgs(extraJvmArgs)
                 }
 
                 sourceDir = file("${workDirectory}/docs/")
