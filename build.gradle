@@ -81,29 +81,37 @@ def registerAsciiDocTask(String format, Class<?> taskType) {
 
                 def fileVersion = "${project.version.trim()}-${lang}"
 
-                attributes = ['icons'                : 'font',
-                              'version-label'        : '',
-                              'revnumber'            : fileVersion,
-                              'revdate'              : versionDate,
-                              'document-version'     : "${fileVersion}-${versionDate}${formatValidity(validity, lang)}",
-                              'currentDate'          : versionDate,
-                              'release-version'      : project.version,
-                              'language'             : lang,
-                              'curriculumFileName'   : curriculumFileName,
-                              'data-uri'             : true,
-                              'allow-uri-read'       : true,
-                              'include-configuration': "tags=**;${lang};!*",
-                              'suffix'               : suffix.toString(),
+                def attrs = ['icons'                : 'font',
+                             'version-label'        : '',
+                             'revnumber'            : fileVersion,
+                             'revdate'              : versionDate,
+                             'document-version'     : "${fileVersion}-${versionDate}${formatValidity(validity, lang)}",
+                             'currentDate'          : versionDate,
+                             'release-version'      : project.version,
+                             'language'             : lang,
+                             'curriculumFileName'   : curriculumFileName,
+                             'data-uri'             : true,
+                             'allow-uri-read'       : true,
+                             'include-configuration': "tags=**;${lang};!*",
+                             'suffix'               : suffix.toString(),
                 ]
 
                 if (format == "pdf") {
                     theme = "isaqb"
                     fontsDirs = ['../pdf-theme/fonts']
-                    attributes['compress'] = true
+                    attrs['compress'] = true
+                    // Print/book layout. The document turns this flag into ":media: prepress"
+                    // (see docs/config/setup.adoc); the 'media' attribute has no effect when
+                    // passed through the attributes map.
+                    if (prepress) {
+                        attrs['prepress'] = 'true'
+                    }
                 } else {
-                    attributes['stylesheet'] = '../html-theme/adoc-github.css'
-                    attributes['stylesheet-dir'] = '../html-theme'
+                    attrs['stylesheet'] = '../html-theme/adoc-github.css'
+                    attrs['stylesheet-dir'] = '../html-theme'
                 }
+
+                attributes = attrs
 
                 // Capture file paths at configuration time to avoid project access at execution time
                 def suffixPart = suffix ? "-${suffix.toLowerCase()}" : ""
