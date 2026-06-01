@@ -31,6 +31,7 @@ ext {
     validity = rootProject.findProperty("validity")
     languages = rootProject.findProperty("languages") ?: ["DE", "EN"]
     suffixTags = rootProject.findProperty("suffixTags") ? rootProject.suffixTags : [""]
+    prepress = Boolean.parseBoolean((rootProject.findProperty("prepress") ?: false).toString())
 }
 
 asciidoctorj {
