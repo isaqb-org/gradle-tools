@@ -36,6 +36,7 @@ ext {
 asciidoctorj {
     version = '3.0.1'
     docExtensions new File("${projectDir}/SpecialTocTreeprocessor.groovy")
+    requires "${projectDir}/robust-page-numbering.rb"
 }
 
 static def formatValidity(validity, language) {
