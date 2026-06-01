@@ -25,36 +25,53 @@ treeprocessor { document ->
     // Sort the learning goals by ID for consistency
     learningGoalSections.sort { a, b -> a.getId() <=> b.getId() }
 
-    // Find the insertion point - after the preamble which contains the TOC
+    // The learning-goals overview must stay in the roman-numbered front matter, i.e.
+    // BEFORE the TOC (page numbering uses "start_at: after-toc"). We therefore attach it
+    // to the preamble as a discrete (floating) title + list, inserted just before the TOC
+    // block, instead of as a top-level chapter. As a discrete title it is intentionally
+    // not numbered and not listed in the TOC.
     def blocks = document.getBlocks()
-    def insertIndex = 0  // Default to beginning
+    def preamble = blocks.find { it.getNodeName() == "preamble" }
 
-    // Look for preamble (which contains TOC)
-    for (int i = 0; i < blocks.size(); i++) {
-        def block = blocks[i]
-        if (block.getNodeName() == "preamble") {
-            insertIndex = i + 1
-            break
+    def listBlock
+    if (preamble) {
+        def heading = createBlock(preamble, "floating_title", [:])
+        heading.setLevel(1)
+        heading.setTitle(sectionTitle)
+
+        listBlock = createList(preamble, "ulist")
+
+        // Insert before the TOC block so the overview stays ahead of the TOC (PDF places
+        // the TOC at the end of the front matter via :toc: macro). If there is no TOC
+        // block in the preamble (e.g. HTML, where the TOC is a left sidebar), append.
+        def preBlocks = preamble.getBlocks()
+        def tocIndex = preBlocks.findIndexOf {
+            it.getNodeName() == "toc" || it.getContext()?.toString() == "toc"
         }
-    }
-
-    // If no preamble found, look for the first section
-    if (insertIndex == 0) {
+        if (tocIndex >= 0) {
+            preBlocks.add(tocIndex, listBlock)
+            preBlocks.add(tocIndex, heading)
+        } else {
+            preBlocks.add(heading)
+            preBlocks.add(listBlock)
+        }
+    } else {
+        // Fallback (no preamble): insert a real top-level section before the first chapter.
+        // This variant IS numbered and appears in the TOC.
+        def insertIndex = 0
         for (int i = 0; i < blocks.size(); i++) {
-            def block = blocks[i]
-            if (block.getNodeName() == "section") {
+            if (blocks[i].getNodeName() == "section") {
                 insertIndex = i
                 break
             }
         }
+
+        def sectionBlock = createSection(document, 1, false, [:])
+        sectionBlock.setTitle(sectionTitle)
+        listBlock = createList(sectionBlock, "ulist")
+        sectionBlock.getBlocks().add(listBlock)
+        blocks.add(insertIndex, sectionBlock)
     }
-
-    def sectionBlock = createSection(document, 1, false, [:])
-    sectionBlock.setTitle(sectionTitle)
-
-    // Create a list for the learning goals
-    def listBlock = createList(sectionBlock, "ulist")
-    sectionBlock.getBlocks().add(listBlock)
 
     // Add each learning goal as a list item with proper xref
     learningGoalSections.each { section ->
@@ -70,9 +87,6 @@ treeprocessor { document ->
         def listItem = createListItem(listBlock, "xref:${id}[${cleanTitle}]")
         listBlock.getBlocks().add(listItem)
     }
-
-    // Add section to document
-    blocks.add(insertIndex, sectionBlock)
 
     return document
 }
