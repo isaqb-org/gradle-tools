@@ -25,52 +25,30 @@ treeprocessor { document ->
     // Sort the learning goals by ID for consistency
     learningGoalSections.sort { a, b -> a.getId() <=> b.getId() }
 
-    // The learning-goals overview must stay in the roman-numbered front matter, i.e.
-    // BEFORE the TOC (page numbering uses "start_at: after-toc"). We therefore attach it
-    // to the preamble as a discrete (floating) title + list, inserted just before the TOC
-    // block, instead of as a top-level chapter. As a discrete title it is intentionally
-    // not numbered and not listed in the TOC.
     def blocks = document.getBlocks()
-    def preamble = blocks.find { it.getNodeName() == "preamble" }
 
-    def listBlock
-    if (preamble) {
-        def heading = createBlock(preamble, "floating_title", [:])
-        heading.setLevel(1)
-        heading.setTitle(sectionTitle)
+    def sectionBlock = createSection(document, 1, false, [:])
+    sectionBlock.setTitle(sectionTitle)
+    // treeprocessor-created sections skip asciidoctor's auto ID generation; set one
+    // explicitly so the TOC/xref links resolve instead of jumping to the document top.
+    sectionBlock.setId("learning-goals-overview")
+    def listBlock = createList(sectionBlock, "ulist")
+    sectionBlock.getBlocks().add(listBlock)
 
-        listBlock = createList(preamble, "ulist")
+    def topSections = blocks.findAll { it.getNodeName() == "section" }
+    def copyrightSection = topSections.find { it.getId() == "copyright" } ?: topSections[0]
 
-        // Insert before the TOC block so the overview stays ahead of the TOC (PDF places
-        // the TOC at the end of the front matter via :toc: macro). If there is no TOC
-        // block in the preamble (e.g. HTML, where the TOC is a left sidebar), append.
-        def preBlocks = preamble.getBlocks()
-        def tocIndex = preBlocks.findIndexOf {
-            it.getNodeName() == "toc" || it.getContext()?.toString() == "toc"
-        }
-        if (tocIndex >= 0) {
-            preBlocks.add(tocIndex, listBlock)
-            preBlocks.add(tocIndex, heading)
-        } else {
-            preBlocks.add(heading)
-            preBlocks.add(listBlock)
-        }
+    // Tag the first real chapter so robust-page-numbering.rb knows where arabic page 1 starts.
+    def firstChapter = topSections.find { it != copyrightSection }
+    firstChapter?.addRole("arabic-start")
+
+    // Insert the overview after the copyright section, which renders after the toc::[]
+    // (authored as copyright's last child) -> order: copyright, TOC, overview, chapters.
+    if (copyrightSection != null) {
+        blocks.add(blocks.indexOf(copyrightSection) + 1, sectionBlock)
     } else {
-        // Fallback (no preamble): insert a real top-level section before the first chapter.
-        // This variant IS numbered and appears in the TOC.
-        def insertIndex = 0
-        for (int i = 0; i < blocks.size(); i++) {
-            if (blocks[i].getNodeName() == "section") {
-                insertIndex = i
-                break
-            }
-        }
-
-        def sectionBlock = createSection(document, 1, false, [:])
-        sectionBlock.setTitle(sectionTitle)
-        listBlock = createList(sectionBlock, "ulist")
-        sectionBlock.getBlocks().add(listBlock)
-        blocks.add(insertIndex, sectionBlock)
+        def idx = firstChapter != null ? blocks.indexOf(firstChapter) : 0
+        blocks.add(idx, sectionBlock)
     }
 
     // Add each learning goal as a list item with proper xref
